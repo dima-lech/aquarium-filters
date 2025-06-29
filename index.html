@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aquarium Filter Replacement Schedule</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Configure Tailwind CSS to use Inter font */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Basic table styling */
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+            width: 100%;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            white-space: nowrap; /* Prevent text wrapping in cells */
+        }
+        thead th {
+            position: sticky;
+            top: 0;
+            background-color: #e2e8f0; /* bg-gray-200 */
+            z-index: 10; /* Ensure header stays above content when scrolling */
+        }
+        tbody tr:last-child td:first-child {
+            border-bottom-left-radius: 0.5rem; /* rounded-bl-lg on the last date cell */
+        }
+        tbody tr:last-child td:last-child {
+            border-bottom-right-radius: 0.5rem; /* rounded-br-lg on the last filter cell */
+        }
+        /* Override Tailwind's default rounded-lg on cells in header and body */
+        thead th:first-child { border-top-left-radius: 0.5rem; }
+        thead th:last-child { border-top-right-radius: 0.5rem; }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-100 p-4 flex items-start justify-center">
+
+    <div class="w-full max-w-screen-xl bg-white rounded-lg shadow-xl overflow-hidden">
+        <h1 class="text-3xl font-bold text-center py-6 bg-blue-600 text-white rounded-t-lg">Aquarium Filter Replacement Schedule</h1>
+        <div class="p-6 overflow-x-auto">
+            <table class="w-full border-collapse table-auto text-sm">
+                <thead class="bg-gray-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Date</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">White (3 weeks)</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Black (6 weeks)</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Green (10 weeks)</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Blue Coarse (20 weeks)</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Blue Fine 1 (78 weeks)</th>
+                        <th class="px-4 py-3 text-left font-semibold text-gray-700 border-b border-gray-300">Blue Fine 2 (78 weeks, +39w)</th>
+                    </tr>
+                </thead>
+                <tbody id="schedule-body">
+                    <!-- Table rows will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // Ensure Tailwind CSS configuration applies Inter font
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                },
+            },
+        };
+
+        /**
+         * Helper function to add a specified number of weeks to a given date.
+         * @param {Date} date - The starting date.
+         * @param {number} weeks - The number of weeks to add.
+         * @returns {Date} A new Date object with the added weeks.
+         */
+        function addWeeks(date, weeks) {
+            const newDate = new Date(date.getTime()); // Create a new Date object to avoid modifying the original
+            newDate.setDate(newDate.getDate() + (weeks * 7)); // Add days (weeks * 7)
+            return newDate;
+        }
+
+        /**
+         * Helper function to format a Date object into DD.MM.YYYY string format.
+         * @param {Date} date - The date object to format.
+         * @returns {string} The formatted date string.
+         */
+        function formatDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed, so add 1
+            const year = date.getFullYear();
+            return `${day}.${month}.${year}`;
+        }
+
+        /**
+         * Determines if a specific filter should be replaced on a given week index.
+         * The weekIndex is 0 for 28.06.2025, 1 for 05.07.2025, and so on.
+         *
+         * @param {string} filterName - The name of the filter (e.g., 'White', 'Blue Fine 1').
+         * @param {number} weekIndex - The current week's index relative to the start date (28.06.2025).
+         * @returns {boolean} True if the filter needs replacement, false otherwise.
+         */
+        function shouldBeReplaced(filterName, weekIndex) {
+            switch (filterName) {
+                case 'White':
+                    // Replaced every 3 weeks, starting from week 0
+                    return weekIndex % 3 === 0;
+                case 'Black':
+                    // Replaced every 6 weeks, starting from week 0
+                    return weekIndex % 6 === 0;
+                case 'Green':
+                    // Replaced every 10 weeks, starting from week 0
+                    return weekIndex % 10 === 0;
+                case 'Blue Coarse':
+                    // Replaced every 20 weeks, starting from week 0
+                    return weekIndex % 20 === 0;
+                case 'Blue Fine 1':
+                    // First replacement on week 1 (05.07.2025), then every 78 weeks thereafter.
+                    // The 'x' appears if weekIndex is 1, 79, 157, etc.
+                    return (weekIndex >= 1 && (weekIndex - 1) % 78 === 0);
+                case 'Blue Fine 2':
+                    // First replacement on week 39, then every 78 weeks thereafter.
+                    // The 'x' appears if weekIndex is 39, 117, 195, etc.
+                    return (weekIndex >= 39 && (weekIndex - 39) % 78 === 0);
+                default:
+                    return false; // Should not happen for defined filters
+            }
+        }
+
+        // Execute code once the DOM is fully loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            const scheduleBody = document.getElementById('schedule-body');
+            const today = new Date();
+            // Normalize today's date to the start of the day for accurate comparison
+            today.setHours(0, 0, 0, 0);
+
+            const startDate = new Date('2025-06-28');
+            // Normalize the start date to the start of the day
+            startDate.setHours(0, 0, 0, 0);
+
+            const numWeeks = 3 * 52; // Generate table for 3 years (52 weeks per year)
+
+            // Define the order of filter columns
+            const filterNames = [
+                'White', 'Black', 'Green', 'Blue Coarse', 'Blue Fine 1', 'Blue Fine 2'
+            ];
+
+            // Loop through each week for the next 3 years
+            for (let i = 0; i < numWeeks; i++) {
+                const currentDate = addWeeks(startDate, i); // Calculate the date for the current week
+
+                const row = document.createElement('tr');
+                row.classList.add('hover:bg-gray-50'); // Add hover effect for rows
+
+                // Create and style the Date cell
+                const dateCell = document.createElement('td');
+                dateCell.classList.add('px-4', 'py-3', 'border-b', 'border-gray-200', 'font-medium');
+                dateCell.textContent = formatDate(currentDate);
+
+                // Apply dynamic background colors to the date cell based on its relation to today's date
+                if (currentDate.toDateString() === today.toDateString()) {
+                    dateCell.classList.add('bg-blue-200', 'text-blue-800'); // Blue for today's date
+                } else if (currentDate < today) {
+                    dateCell.classList.add('bg-green-100', 'text-green-800'); // Green for past dates
+                } else {
+                    dateCell.classList.add('bg-white'); // White for future dates
+                }
+                row.appendChild(dateCell); // Add the date cell to the row
+
+                // Loop through each filter to create its corresponding cell for the current week
+                filterNames.forEach(filterName => {
+                    const filterCell = document.createElement('td');
+                    filterCell.classList.add('px-4', 'py-3', 'border-b', 'border-gray-200', 'text-center');
+
+                    // Check if the filter needs replacement this week
+                    if (shouldBeReplaced(filterName, i)) {
+                        filterCell.textContent = 'x'; // Mark with 'x' if replacement is due
+                        filterCell.classList.add('font-bold', 'text-gray-900');
+                    } else {
+                        filterCell.textContent = ''; // Leave empty if no replacement
+                    }
+                    row.appendChild(filterCell); // Add the filter cell to the row
+                });
+
+                scheduleBody.appendChild(row); // Add the completed row to the table body
+            }
+        });
+    </script>
+</body>
+</html>
