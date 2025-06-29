@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Aquarium Filter Replacement Schedule</title>
+    <title>Фильтры для Аквариума</title>
     <!-- Tailwind CSS CDN for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -19,16 +19,31 @@
             width: 100%;
         }
         th, td {
-            padding: 12px 16px;
+            /* Responsive padding */
+            padding: 8px 10px; /* Default smaller padding for mobile */
             text-align: left;
-            white-space: nowrap; /* Prevent text wrapping in cells */
         }
+        /* Make table headers allow text wrapping */
         thead th {
+            white-space: normal; /* Allow text to wrap */
+            word-break: break-word; /* Break long words if necessary */
             position: sticky;
             top: 0;
             background-color: #e2e8f0; /* bg-gray-200 */
             z-index: 10; /* Ensure header stays above content when scrolling */
         }
+        /* Ensure table data cells don't wrap to keep single line 'x' or date */
+        tbody td {
+            white-space: nowrap; /* Prevent text wrapping in data cells */
+        }
+
+        /* Responsive padding for larger screens */
+        @media (min-width: 640px) { /* Tailwind's 'sm' breakpoint */
+            th, td {
+                padding: 12px 16px; /* Larger padding for desktop */
+            }
+        }
+
         tbody tr:last-child td:first-child {
             border-bottom-left-radius: 0.5rem; /* rounded-bl-lg on the last date cell */
         }
@@ -153,6 +168,8 @@
                 'White', 'Black', 'Green', 'Blue Coarse', 'Blue Fine 1', 'Blue Fine 2'
             ];
 
+            let lastGreenRow = null; // Variable to store the last green row
+
             // Loop through each week for the next 3 years
             for (let i = 0; i < numWeeks; i++) {
                 const currentDate = addWeeks(startDate, i); // Calculate the date for the current week
@@ -162,14 +179,20 @@
 
                 // Create and style the Date cell
                 const dateCell = document.createElement('td');
-                dateCell.classList.add('px-4', 'py-3', 'border-b', 'border-gray-200', 'font-medium');
+                dateCell.classList.add('font-medium');
                 dateCell.textContent = formatDate(currentDate);
 
                 // Apply dynamic background colors to the date cell based on its relation to today's date
                 if (currentDate.toDateString() === today.toDateString()) {
                     dateCell.classList.add('bg-blue-200', 'text-blue-800'); // Blue for today's date
+                    // If today's date is green in the past, and we are not on the last green row,
+                    // we want to store this as the last green row that's being created.
+                    if (currentDate < today) {
+                        lastGreenRow = row;
+                    }
                 } else if (currentDate < today) {
                     dateCell.classList.add('bg-green-100', 'text-green-800'); // Green for past dates
+                    lastGreenRow = row; // Update lastGreenRow with the current green row
                 } else {
                     dateCell.classList.add('bg-white'); // White for future dates
                 }
@@ -178,7 +201,8 @@
                 // Loop through each filter to create its corresponding cell for the current week
                 filterNames.forEach(filterName => {
                     const filterCell = document.createElement('td');
-                    filterCell.classList.add('px-4', 'py-3', 'border-b', 'border-gray-200', 'text-center');
+                    // Add default padding classes here. Specific padding in CSS via th, td selector.
+                    filterCell.classList.add('border-b', 'border-gray-200', 'text-center');
 
                     // Check if the filter needs replacement this week
                     if (shouldBeReplaced(filterName, i)) {
@@ -191,6 +215,11 @@
                 });
 
                 scheduleBody.appendChild(row); // Add the completed row to the table body
+            }
+
+            // Scroll to the last green entry (or the today entry if it's the first in the past)
+            if (lastGreenRow) {
+                lastGreenRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
             }
         });
     </script>
